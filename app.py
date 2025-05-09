@@ -133,7 +133,7 @@ def dashboard():
 #     threading.Thread(target=run_streamlit).start()
 
 if __name__ == '__main__':
-    os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
-    app.run(debug=True, threaded=True, use_reloader=False) 
+    # os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
+    app.run() 
 
-
+# debug=True, threaded=True, use_reloader=False
