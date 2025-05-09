@@ -118,10 +118,12 @@ def predict_csv():
 def download_file(filename):
     return send_from_directory(app.config['RESULT_FOLDER'], filename, as_attachment=True)
 
-# @app.route('/dashboard')
-# def dashboard():
-#     return redirect('http://localhost:8501')
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 
+# def run_streamlit():)
+# redirect('http://localhost:8501')
 # def run_streamlit():
 #     subprocess.Popen(["streamlit", "run", "dashboard\dashboard.py","--server.port", "8501"])
 
