@@ -303,6 +303,50 @@ button:hover {
    width: 85%;
 }
 
+/* Table Styling */
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    margin-top: 1rem;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Ensure that the table is wide enough for the data */
+    table-layout: auto; /* Let the table expand based on content */
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    white-space: nowrap; /* Prevent text from wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Truncate text if it's too long */
+    word-wrap: break-word; /* Allow breaking words if needed */
+}
+
+th {
+    background-color: var(--dark-card);
+    font-weight: bold;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background-color: var(--dark-surface);
+}
+
+tr:hover {
+    background-color: var(--dark-card);
+}
+
+.results-table a {
+    color: inherit; /* Ensures links inherit the table's text color */
+    text-decoration: none;
+}
+
+
 /* Dashboard Page */
 .dashboard-grid {
    display: grid;
@@ -386,3 +430,114 @@ button:hover {
        flex-direction: column;
    }
 }
+a:focus,
+button:focus,
+input:focus,
+
+input,
+select,
+button,
+.contributor-card,
+.nav-link {
+   transition: all 0.3s ease;
+}
+
+
+button:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+}
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+
+.p-1 { padding: 0.5rem; }
+.p-2 { padding: 1rem; }
+.p-3 { padding: 1.5rem; }
+
+/* Chrome, Safari */
+::-webkit-scrollbar {
+   width: 10px;
+}
+
+::-webkit-scrollbar-track {
+   background: var(--dark-surface);
+}
+
+::-webkit-scrollbar-thumb {
+   background: var(--accent-purple);
+   border-radius: 5px;
+}
+
+@media (max-width: 480px) {
+   .contributor-card,
+   .dashboard-card,
+   .input-section,
+   .results-section {
+       padding: 1rem;
+   }
+
+   h1, .hero h1 {
+       font-size: 1.8rem;
+   }
+
+   p, label, button, input, select {
+       font-size: 0.95rem;
+   }
+}
+/* Hide the native file input */
+input[type="file"] {
+    display: none;
+}
+
+/* Style the label as a custom file upload button */
+.custom-file-label {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(to right, var(--accent-purple), var(--accent-teal));
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.custom-file-label:hover {
+    opacity: 0.9;
+}
+
+
+:root.light-theme {
+    --dark-bg: #ffffff;
+    --dark-surface: #f5f5f5;
+    --dark-card: #f0f0f0;
+    --accent-purple: #7c3aed;
+    --accent-teal: #14b8a6;
+    --text-primary: #1e1e1e;
+    --text-secondary: #555555;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.model_accuracy {
+    background-color: var(--dark-card); /* matches dark theme */
+    padding: 1.5rem;
+    margin: 2rem 0;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+
+.model_accuracy p {
+    font-size: 1.4rem;
+    color: var(--accent-teal);
+    font-weight: 600;
+    margin: 0;
+}
+
+.model_accuracy strong {
+    color: var(--accent-purple);
+}
+

@@ -1,27 +1,28 @@
-// Function to update the active navigation link
-function updateActiveNavLink() {
-   // Get the current page from URL
-   let currentPage = window.location.pathname;
-   
-   // Map paths to nav link IDs
-   if (currentPage === '/' || currentPage === '/template/index.html') {
-       currentPage = 'home';
-   } else if (currentPage === '/prediction' || currentPage === '/template/prediction.html') {
-       currentPage = 'prediction';
-   } else if (currentPage === '/dashboard' || currentPage === '/template/dashboard.html') {
-       currentPage = 'dashboard';
-   }
-   
-   // Update active state for all navigation links
-   const navLinks = document.querySelectorAll('.nav-link');
-   navLinks.forEach(link => {
-       const linkId = link.getAttribute('data-page');
-       if (linkId === currentPage) {
-           link.classList.add('active');
-       } else {
-           link.classList.remove('active');
-       }
-   });
-}
 
-// Rest of your JavaScript code...
+ const toggleBtn = document.getElementById('themeToggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('light-theme');
+      localStorage.setItem('theme', document.documentElement.classList.contains('light-theme') ? 'light' : 'dark');
+    });
+  }
+
+  // Load theme preference on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    }
+   });
+
+
+      const fileInput = document.getElementById('file-upload');
+    const predictBtn = document.getElementById('predict-btn');
+
+    if (fileInput && predictBtn) {
+        fileInput.addEventListener('change', function () {
+            const inputElem = /** @type {HTMLInputElement} */ (fileInput);
+            /** @type {HTMLButtonElement} */(predictBtn).disabled = !(inputElem.files && inputElem.files.length);
+        });
+    }
+

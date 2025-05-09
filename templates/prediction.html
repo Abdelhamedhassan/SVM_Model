@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analytics Platform - Prediction</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav>
+        <div class="container nav-container">
+            <div class="logo">
+                <span>Data</span><span class="logo-accent">Analytics</span>
+            </div>
+            <ul class="nav-links">
+                <li class="nav-link" data-page="home"><a href="/">Home</a></li>
+                <li class="nav-link" data-page="prediction"><a href="/prediction">Prediction</a></li>
+                <li class="nav-link" data-page="dashboard"><a href="/dashboard">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" id="content">
+        <h1>Make a Prediction</h1>
+        <p>Upload your CSV or Excel file to generate predictions.</p>
+
+        <div class="prediction-container">
+            <div class="input-section">
+                <h2>Upload File</h2>
+                <form action="/predict-csv" method="POST" enctype="multipart/form-data" id="upload-form">
+                    <div class="form-group">
+                        <label for="file-upload" class="custom-file-label">Choose File</label>
+                        <input type="file" id="file-upload" name="file" accept=".csv, .xlsx, .xls">
+                        <div id="file-selected" class="file-selected"></div>
+                    </div>
+                    <button type="submit" id="predict-btn" disabled>Predict</button>
+                </form>
+                <div id="loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Processing your file. This may take a moment...</p>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h2>Prediction Results</h2>
+
+                {% if results and results['accuracy'] is not none %}
+                    <div class="model_accuracy">
+                        <p><strong>Model Accuracy:</strong> {{ (results['accuracy'] * 100) | round(2) }}%</p>
+                    </div>
+                {% endif %}
+
+                {% if results %}
+                    <div class="alert alert-success">
+                        <p>Predictions generated successfully!</p>
+                    </div>
+                {% elif error %}
+                    <div class="alert alert-danger">
+                        <p>{{ error }}</p>
+                    </div>
+                {% else %}
+                    <div id="no-result">
+                        <p>Upload a file and click Predict to see results</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if results and results['data'] %}
+        <div class="table-container">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        {% for column in results['data'][0].keys() %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results['data'][:100] %}
+                        <tr>
+                            {% for column, value in row.items() %}
+                                <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if results['data']|length > 100 %}
+                <p>Showing first 100 rows of {{ results['data']|length }} total rows.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if results and results['result_file'] %}
+        <a href="/uploads/{{ results['result_file'] }}" class="download-link" download>Download Full Results</a>
+        {% endif %}
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const predictBtn = document.getElementById('predict-btn');
+        const fileSelected = document.getElementById('file-selected');
+        const uploadForm = document.getElementById('upload-form');
+        const loading = document.getElementById('loading');
+
+        fileInput.addEventListener('change', function () {
+            const hasFile = fileInput.files.length > 0;
+            predictBtn.disabled = !hasFile;
+
+            if (hasFile) {
+                fileSelected.textContent = `Selected file: ${fileInput.files[0].name}`;
+            } else {
+                fileSelected.textContent = '';
+            }
+        });
+
+        uploadForm.addEventListener('submit', function () {
+            if (fileInput.files.length > 0) {
+                loading.style.display = 'block';
+                predictBtn.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

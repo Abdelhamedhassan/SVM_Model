@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analytics Platform - Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav>
+        <div class="container nav-container">
+            <div class="logo">
+                <span>Data</span><span class="logo-accent">Analytics</span>
+            </div>
+            <ul class="nav-links">
+               <li class="nav-link" data-page="home"><a href="/">Home</a></li>
+               <li class="nav-link" data-page="prediction"><a href="/prediction">Prediction</a></li>
+               <li class="nav-link" data-page="dashboard"><a href="/dashboard">Dashboard</a></li>
+           </ul>
+        </div>
+    </nav>
+    
+    <div class="container" id="content">
+        <!-- Dashboard Page Content -->
+        <h1>Analytics Dashboard</h1>
+        <p>View key metrics and performance indicators at a glance.</p>
+        
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>MODEL ACCURACY</h3>
+                <div class="metric">94.3%</div>
+                <div class="chart-container">
+                    <canvas id="model-accuracy-chart"></canvas>
+                </div>
+
+            </div> 
+        
