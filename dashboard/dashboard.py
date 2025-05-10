@@ -6,7 +6,7 @@ import pydeck as pdk
 import plotly.figure_factory as ff
 
 # ------------------- PAGE SETUP -------------------
-st.set_page_config(page_title="Heart Health Dashboard",page_icon='Heart-Disease.png', layout="wide")
+st.set_page_config(page_title="Heart Health Dashboard", page_icon='Heart-Disease.png', layout="wide")
 
 # ------------------- GLOBAL STYLE -------------------
 st.markdown("""
@@ -28,14 +28,12 @@ st.markdown("""
         font-weight: 600;
         box-shadow: 0 0 8px rgba(96,165,250,0.4);
     }
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #1e293b !important;
         border-radius: 16px;
         padding: 1rem !important;
         box-shadow: 0 0 12px rgba(96,165,250,0.4);
     }
-    /* Filter Box Styling */
     div[data-baseweb="select"] {
         background-color: #1e293b !important;
         color: white !important;
@@ -51,7 +49,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------- LOAD DATA -------------------
-df = pd.read_csv("dashboard\heart_2022_no_nans.csv")
+df = pd.read_csv("dashboard\\train_balanced.csv")
+df["HadHeartAttack"] = df["HadHeartAttack"].map({1: "yes", 0: "no"})
+df = df.dropna()
+df2 = pd.read_csv("dashboard\\transformed_train_data.csv")
+
+
 
 state_coords = {
     'Alabama': [32.806671, -86.791130], 'Alaska': [61.370716, -152.404419],
@@ -88,21 +91,22 @@ df["StateLon"] = df["State"].map(lambda x: state_coords.get(x, [None, None])[1])
 with st.sidebar:
     st.title("Filters")
 
-    with st.container():
-        st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-        sex_filter = st.multiselect("Sex", df["Sex"].unique(), default=df["Sex"].unique())
-        st.markdown("</div>", unsafe_allow_html=True)
+    sex_filter = st.multiselect("Sex", df["Sex"].unique(), default=df["Sex"].unique())
+    age_filter = st.multiselect("Age Category", df["AgeCategory"].unique(), default=df["AgeCategory"].unique())
+    race_filter = st.multiselect("Race / Ethnicity", df["RaceEthnicityCategory"].unique(), default=df["RaceEthnicityCategory"].unique())
 
-    with st.container():
-        st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-        age_filter = st.multiselect("Age Category", df["AgeCategory"].unique(), default=df["AgeCategory"].unique())
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Additional filters
+    if "GeneralHealth" in df2.columns:
+        health_filter = st.multiselect("General Health", df2["GeneralHealth"].unique(), default=df2["GeneralHealth"].unique())
+    else:
+        health_filter = []
 
-    with st.container():
-        st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-        race_filter = st.multiselect("Race / Ethnicity", df["RaceEthnicityCategory"].unique(), default=df["RaceEthnicityCategory"].unique())
-        st.markdown("</div>", unsafe_allow_html=True)
+    if "LastCheckupTime" in df2.columns:
+        checkup_filter = st.multiselect("Last Checkup Time", df2["LastCheckupTime"].unique(), default=df2["LastCheckupTime"].unique())
+    else:
+        checkup_filter = []
 
+# ------------------- FILTER DATA -------------------
 df_filtered = df[
     df["Sex"].isin(sex_filter) &
     df["AgeCategory"].isin(age_filter) &
@@ -122,12 +126,29 @@ with col2:
     st.metric(label="⚖️ Avg BMI", value=f"{bmi_avg:.1f}")
 
 with col3:
-    smoker_pct = df_filtered["SmokerStatus"].str.lower().eq("current smoker").mean() * 100
-    st.metric(label="🚬 Smokers %", value=f"{smoker_pct:.1f}%")
+    smoker_column_name = "SmokerStatus" 
+    current_smoker_pct = df_filtered[smoker_column_name].str.lower().str.contains("current smoker").mean() * 100
+
+    st.metric(label="🚬 Smokers %", value=f"{current_smoker_pct:.1f}%")
 
 with col4:
     sleep_avg = df_filtered["SleepHours"].mean()
     st.metric(label="🛌 Avg Sleep", value=f"{sleep_avg:.1f} hrs")
+
+# ------------------- NEW SECTION: Sleep Distribution -------------------
+st.markdown("## 🛌 Sleep Distribution")
+fig_sleep = ff.create_distplot([df_filtered["SleepHours"].dropna()], group_labels=["Sleep Hours"],
+                               colors=["#60a5fa"], show_hist=False)
+fig_sleep.update_layout(paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color="white"))
+st.plotly_chart(fig_sleep, use_container_width=True)
+
+# ------------------- NEW SECTION: BMI vs Physical Health -------------------
+st.markdown("## 🔍 BMI vs Physical Health")
+fig_bmi = px.scatter(df_filtered, x="BMI", y="PhysicalHealthDays", color="Sex",
+                     color_discrete_sequence=px.colors.sequential.Blues_r,
+                     title="BMI vs Physical Health Days")
+fig_bmi.update_layout(paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color="white"))
+st.plotly_chart(fig_bmi, use_container_width=True)
 
     
 # ------------------- LINE CHART -------------------
@@ -155,13 +176,14 @@ fig1.update_layout(
 st.plotly_chart(fig1, use_container_width=True)
 
 # ------------------- HISTOGRAM -------------------
+
 st.markdown("## 🧑‍🤝‍🧑 Heart Attack Distribution by Sex")
 fig2 = px.histogram(
     df_filtered,
     x="Sex",
     color="HadHeartAttack",
     barmode="group",
-    color_discrete_map={"Yes": "#22d3ee", "No": "#8b5cf6"},  # Custom neon shades
+    color_discrete_map={"yes": "#22d3ee", "no": "#8b5cf6"},  
     title=None
 )
 fig2.update_layout(
@@ -176,7 +198,6 @@ st.plotly_chart(fig2, use_container_width=True)
 
 
 # ------------------- NEON STYLE MAP -------------------
-
 st.markdown("## 🗺️ Heart Health by U.S. State")
 
 # Filter dataset
@@ -216,46 +237,25 @@ view_state = pdk.ViewState(
     longitude=-98, latitude=39, zoom=3.4, pitch=30
 )
 
-# Plotly colorbar legend (using dummy heatmap)
+
 colorscale = [
     [0, 'rgb(191,242,255)'],
     [1, 'rgb(0,92,160)']
 ]
 
-legend_fig = ff.create_annotated_heatmap(
-    z=[[0]],  # Use a real numeric value instead of None
-    annotation_text=[[""]],
-    colorscale=colorscale,
-    showscale=True,
-    colorbar=dict(
-        title=dict(text="Heart Attack Rate", side="right"),
-        tickvals=[0, 1],
-        ticktext=[f"{int(min_rate)}", f"{int(max_rate)}"],
-        thickness=15,
-        len=0.7
-    )
+# Manually creating the colorbar to avoid unwanted blue block
+colorbar = dict(
+    title=dict(text="Heart Attack Rate", side="right"),
+    tickvals=[0, 1],
+    ticktext=[f"{int(min_rate)}", f"{int(max_rate)}"],
+    thickness=15,
+    len=0.7,
+    ticks="outside",  # Ensure ticks are outside
+    tickcolor="white",  # Color for ticks
+    tickwidth=2         # Make tick width visible
 )
 
-legend_fig.update_traces(
-    showscale=True,
-    hoverinfo='skip',
-    xgap=0,
-    ygap=0,
-    colorscale=colorscale,
-    zmin=0,
-    zmax=1
-)
-
-legend_fig.update_layout(
-    margin=dict(l=10, r=10, t=0, b=0),
-    paper_bgcolor="#0f172a",
-    plot_bgcolor="#0f172a",
-    font=dict(color="white"),
-    xaxis=dict(visible=False),
-    yaxis=dict(visible=False)
-)
-
-# Layout in Streamlit
+# Layout for the map (remove the unwanted block)
 col_map, col_legend = st.columns([4, 1])
 with col_map:
     st.pydeck_chart(pdk.Deck(
@@ -264,5 +264,201 @@ with col_map:
         map_style="mapbox://styles/mapbox/dark-v10"
     ))
 
+# Creating legend without unwanted blocks
 with col_legend:
-    st.plotly_chart(legend_fig, use_container_width=True)
+    # Custom plotly legend without unwanted light blue block
+    fig_legend = go.Figure()
+
+    fig_legend.add_trace(go.Scatter(
+        x=[None],
+        y=[None],
+        mode='markers',
+        marker=dict(
+            colorscale=colorscale,
+            cmin=min_rate,
+            cmax=max_rate,
+            color=[min_rate, max_rate],
+            showscale=True,
+            colorbar=colorbar
+        ),
+        showlegend=False
+    ))
+
+    fig_legend.update_layout(
+        title="Heart Attack Rate",
+        margin=dict(l=10, r=10, t=0, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white"),
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False)
+    )
+
+    st.plotly_chart(fig_legend, use_container_width=True)
+
+# ------------------- NEW SECTION: COVID Positivity by Health -------------------
+
+if {'COVIDPositive', 'GeneralHealth'}.issubset(df2.columns):
+    st.markdown("## 🦠 COVID Positivity by General Health")
+    covid_health = df2.groupby(['GeneralHealth', 'COVIDPositive']).size().reset_index(name='Count')
+    fig_covid = px.bar(covid_health, x='GeneralHealth', y='Count', color='COVIDPositive',
+                       barmode='stack', color_discrete_map={'Yes': '#60a5fa', 'No': '#8b5cf6'})
+    fig_covid.update_layout(paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color="white"))
+    st.plotly_chart(fig_covid, use_container_width=True)
+
+
+# ------------------- SMOKERS PIE CHART -------------------
+st.markdown("## 🚬 Smoking Status Distribution")
+
+smoker_counts = df_filtered["SmokerStatus"].value_counts().reset_index()
+smoker_counts.columns = ["SmokerStatus", "Count"]
+
+fig_smokers = px.pie(
+    smoker_counts,
+    values="Count",
+    names="SmokerStatus",
+    color_discrete_sequence=["#0ea5e9", "#1e3a8a", "#3b82f6"]  
+)
+
+fig_smokers.update_traces(
+    textinfo="percent+label"
+)
+
+fig_smokers.update_layout(
+    paper_bgcolor="#0f172a",
+    font=dict(color="white"),
+)
+
+st.plotly_chart(fig_smokers, use_container_width=True)
+
+
+
+st.markdown("## 🚬 Heart Attacks by Smoking Status")
+fig1 = px.histogram(df_filtered, x='SmokerStatus', color='HadHeartAttack', barmode='group',
+                    title="Heart Attack Incidence by Smoking Status")
+st.plotly_chart(fig1, use_container_width=True)
+
+
+st.markdown("## ⚖️ BMI Distribution by Heart Attack Status")
+fig2 = px.violin(df_filtered, y="BMI", color="HadHeartAttack", box=True, points="all",
+                 title="BMI vs Heart Attack Occurrence")
+st.plotly_chart(fig2, use_container_width=True)
+
+st.markdown("## 🏃 Physical Activity and Heart Attacks")
+fig3 = px.histogram(df_filtered, x='PhysicalActivities', color='HadHeartAttack', barmode='group',
+                    title="Heart Attacks vs Physical Activity")
+st.plotly_chart(fig3, use_container_width=True)
+
+st.markdown("## 🛌 Sleep Hours and Heart Attacks")
+fig4 = px.box(df_filtered, x="HadHeartAttack", y="SleepHours", color="HadHeartAttack",
+              title="Sleep Duration by Heart Attack History")
+st.plotly_chart(fig4, use_container_width=True)
+
+
+st.markdown("## 📊 Heart Attacks Across Age Groups")
+fig5 = px.histogram(df_filtered, x='AgeCategory', color='HadHeartAttack', barmode='group',
+                    title="Age vs Heart Attack")
+st.plotly_chart(fig5, use_container_width=True)
+
+st.markdown("## 🧠 Self-Reported Health and Heart Attacks")
+fig6 = px.histogram(df_filtered, x='GeneralHealth', color='HadHeartAttack', barmode='group',
+                    category_orders={"GeneralHealth": ["Excellent", "Very good", "Good", "Fair", "Poor"]},
+                    title="General Health vs Heart Attack")
+st.plotly_chart(fig6, use_container_width=True)
+
+st.markdown("## 🩺 Medical Checkups and Heart Attacks")
+fig7 = px.histogram(df_filtered, x='LastCheckupTime', color='HadHeartAttack', barmode='group',
+                    title="Heart Attacks by Recency of Checkup")
+st.plotly_chart(fig7, use_container_width=True)
+
+st.markdown("## 🍬 Diabetes and Heart Attack Risk")
+fig8 = px.histogram(df_filtered, x='HadDiabetes', color='HadHeartAttack', barmode='group',
+                    title="Heart Attack Incidence by Diabetes Status")
+st.plotly_chart(fig8, use_container_width=True)
+
+st.markdown("## 📈 BMI Distribution by Age")
+fig9 = px.box(
+    df_filtered, x="AgeCategory", y="BMI", color="AgeCategory", title="BMI Across Age Categories",
+    color_discrete_sequence=px.colors.sequential.Blues_r
+)
+fig9.update_layout(paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color="white"))
+
+st.plotly_chart(fig9, use_container_width=True)
+
+st.markdown("## 🧠 Mental Health Days and Heart Attack Risk")
+fig10 = px.box(df_filtered, x="HadHeartAttack", y="MentalHealthDays", color="HadHeartAttack",
+               title="Mental Health Days vs Heart Attack")
+st.plotly_chart(fig10, use_container_width=True)
+
+st.markdown("## 🏥 General Health vs Heart Attack")
+
+health_attack = df.groupby(['GeneralHealth', 'HadHeartAttack']).size().reset_index(name='Count')
+
+fig_health = px.bar(health_attack, 
+                    x='GeneralHealth', 
+                    y='Count', 
+                    color='HadHeartAttack', 
+                    barmode='group',
+                    title='Heart Attack by General Health Status')
+st.plotly_chart(fig_health, use_container_width=True)
+
+
+st.markdown("## 🦠 COVID-19 Positivity by General Health")
+
+covid_health = df_filtered.groupby(['GeneralHealth', 'CovidPos']).size().reset_index(name='Count')
+
+fig14 = px.bar(covid_health, 
+               x='GeneralHealth', 
+               y='Count', 
+               color='CovidPos', 
+               barmode='group',
+               title='COVID-19 Positivity by General Health')
+st.plotly_chart(fig14, use_container_width=True)
+
+st.markdown("## 🧍‍♂️ BMI Distribution by Diabetes Status")
+
+fig15 = px.box(df_filtered, 
+               x='HadDiabetes', 
+               y='BMI', 
+               color='HadDiabetes',
+               title='BMI Distribution for People With and Without Diabetes' , 
+                color_discrete_sequence=px.colors.sequential.Blues_r)
+fig15.update_layout(paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color="white"))
+st.plotly_chart(fig15, use_container_width=True)
+
+st.markdown("## 📊 Correlation Heatmap of Numeric Features")
+
+numeric_cols = ['PhysicalHealthDays', 'MentalHealthDays', 'SleepHours',
+                'HeightInMeters', 'WeightInKilograms', 'BMI']
+
+corr = df[numeric_cols].corr()
+
+fig_corr = px.imshow(
+    corr,
+    text_auto=True,
+    title="Correlation Matrix (Numeric Features)",
+    color_continuous_scale='ice'
+)
+fig_corr.update_layout(
+    template='plotly_dark',
+    width=1000,
+    height=800,
+    title_x=0.5,
+    title_y=0.95
+)
+st.plotly_chart(fig_corr, use_container_width=True)
+
+
+st.markdown("## 🛏️ Average Sleep Hours by Age Category")
+
+sleep_age = df.groupby('AgeCategory')['SleepHours'].mean().reset_index()
+fig_sleep = px.bar(
+    sleep_age, 
+    x='AgeCategory', 
+    y='SleepHours', 
+    title='Average Sleep Hours by Age Category',
+    color='SleepHours',
+    color_continuous_scale='ice'
+)
+fig_sleep.update_layout(template='plotly_dark')
+st.plotly_chart(fig_sleep, use_container_width=True)
