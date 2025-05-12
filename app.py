@@ -10,14 +10,11 @@ import threading
 warnings.filterwarnings('ignore')
 from sklearn.metrics import accuracy_score
 
-# Predict using the loaded model
-
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['RESULT_FOLDER'] = 'uploads'
 
-# Load your model (make sure 'svm_pipeline.pkl' exists in the same directory)
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
